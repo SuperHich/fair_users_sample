@@ -1,9 +1,10 @@
 import 'dart:async';
-import 'dart:convert';
 
+import 'package:fair_users/model/location.dart';
+import 'package:fair_users/model/user.dart';
+import 'package:fair_users/model/user_response.dart';
+import 'package:fair_users/service/fair_api.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-
 import 'package:intl/intl.dart';
 
 void main() {
@@ -20,135 +21,6 @@ class MyApp extends StatelessWidget {
         primaryColor: Colors.white,
       ),
       home: FairUsers(),
-    );
-  }
-}
-
-Future<UserResponse> fetchUsers() async {
-  final response = await http.get(
-      Uri.parse('https://dummyapi.io/data/api/user?limit=100'),
-      headers: {'app-id' : "6104543c1dc6e68fe34f31d4"}
-      );
-
-  if (response.statusCode == 200) {
-    // If the server did return a 200 OK response,
-    // then parse the JSON.
-    return UserResponse.fromJson(jsonDecode(response.body));
-  } else {
-    // If the server did not return a 200 OK response,
-    // then throw an exception.
-    throw Exception('Failed to load users');
-  }
-}
-
-Future<User> fetchUserDetails(String userId) async {
-  final response = await http.get(
-      Uri.parse('https://dummyapi.io/data/api/user/$userId'),
-      headers: {'app-id' : "6104543c1dc6e68fe34f31d4"}
-  );
-
-  if (response.statusCode == 200) {
-    // If the server did return a 200 OK response,
-    // then parse the JSON.
-    return User.fromJson(jsonDecode(response.body));
-  } else {
-    // If the server did not return a 200 OK response,
-    // then throw an exception.
-    throw Exception('Failed to load user details');
-  }
-}
-
-class UserResponse {
-  final List<User> data;
-  final int total;
-  final int page;
-  final int limit;
-  final int offset;
-
-  UserResponse({
-    required this.data,
-    required this.total,
-    required this.page,
-    required this.limit,
-    required this.offset,
-  });
-
-  factory UserResponse.fromJson(Map<String, dynamic> json) {
-    var list = json['data'] as List;
-    List<User> itemsList = list.map((i) => User.fromJson(i)).toList();
-    return UserResponse(
-      data: itemsList,
-      total: json['total'],
-      page: json['page'],
-      limit: json['limit'],
-      offset: json['offset'],
-    );
-  }
-}
-
-class Location {
-  final String city;
-  final String country;
-  final String state;
-  final String street;
-  final String timezone;
-
-  Location({
-    required this.city,
-    required this.country,
-    required this.state,
-    required this.street,
-    required this.timezone,
-  });
-
-  factory Location.fromJson(Map<String, dynamic> json) {
-    return Location(
-      city: json['city'],
-      country: json['country'],
-      state: json['state'],
-      street: json['street'],
-      timezone: json['timezone'],
-    );
-  }
-}
-
-class User {
-  final String id;
-  final String title;
-  final String firstName;
-  final String lastName;
-  final String email;
-  final String picture;
-  final String? gender;
-  final String? phone;
-  final DateTime? dateOfBirth;
-  final Location? location;
-
-  User({
-    required this.id,
-    required this.title,
-    required this.firstName,
-    required this.lastName,
-    required this.email,
-    required this.picture,
-    required this.gender,
-    required this.phone,
-    required this.dateOfBirth,
-    required this.location,
-  });
-
-  factory User.fromJson(Map<String, dynamic> json) {
-    return User(
-      id: json['id'],
-      title: json['title'],
-      firstName: json['firstName'],
-      lastName: json['lastName'],
-      email: json['email'],
-      picture: json['picture'],
-      gender: json['gender'] == null ? null : json['gender'],
-      phone: json['phone'] == null ? null : json['phone'],
-      dateOfBirth: json['dateOfBirth'] == null ? null : DateTime.parse(json['dateOfBirth']),
-      location: json['location'] == null ? null : Location.fromJson(json['location']),
     );
   }
 }
@@ -184,7 +56,7 @@ class _FairUsersState extends State<FairUsers> {
           future: usersResponse,
           builder: (context, snapshot) {
             if (snapshot.hasData && snapshot.data != null) {
-              return _buildSuggestions(snapshot.data!.data);
+              return _buildUsers(snapshot.data!.data);
             } else if (snapshot.hasError) {
               return Text('${snapshot.error}');
             }
@@ -197,7 +69,7 @@ class _FairUsersState extends State<FairUsers> {
     );
   }
 
-  Widget _buildSuggestions(List<User> users) {
+  Widget _buildUsers(List<User> users) {
     _users.addAll(users);
     return ListView.builder(
         padding: const EdgeInsets.all(16.0),
@@ -276,24 +148,24 @@ class _FairUsersState extends State<FairUsers> {
           Future<User> userDetails = fetchUserDetails(user.id);
 
           return Scaffold(
-            appBar: AppBar(
-              title: Text('${user.firstName} details'),
-            ),
-            body: Center(
-              child: FutureBuilder<User>(
-                future: userDetails,
-                builder: (context, snapshot) {
-                  if (snapshot.hasData && snapshot.data != null) {
-                    return details(snapshot.data!);
-                  } else if (snapshot.hasError) {
-                    return Text('${snapshot.error}');
-                  }
-
-                  // By default, show a loading spinner.
-                  return const CircularProgressIndicator();
-                },
+              appBar: AppBar(
+                title: Text('${user.firstName} details'),
               ),
-            )
+              body: Center(
+                child: FutureBuilder<User>(
+                  future: userDetails,
+                  builder: (context, snapshot) {
+                    if (snapshot.hasData && snapshot.data != null) {
+                      return details(snapshot.data!);
+                    } else if (snapshot.hasError) {
+                      return Text('${snapshot.error}');
+                    }
+
+                    // By default, show a loading spinner.
+                    return const CircularProgressIndicator();
+                  },
+                ),
+              )
           );
         },
       ),
