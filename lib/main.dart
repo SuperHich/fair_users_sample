@@ -5,6 +5,8 @@ import 'package:fair_users/model/user_response.dart';
 import 'package:fair_users/service/fair_api.dart';
 import 'package:fair_users/view/favorite_users.dart';
 import 'package:fair_users/view/user_details.dart';
+import 'package:fair_users/view/users_grid.dart';
+import 'package:fair_users/view/users_list.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -34,7 +36,6 @@ class _FairUsersState extends State<FairUsers> {
   late Future<UserResponse> usersResponse;
   final _users = <User>[];
   final _saved = <User>{};
-  final _biggerFont = const TextStyle(fontSize: 18.0);
 
   int _selectedIndex = 0;
 
@@ -87,9 +88,9 @@ class _FairUsersState extends State<FairUsers> {
               _users.clear();
               _users.addAll(snapshot.data!.data);
               if(_selectedIndex == 0) {
-                return _buildUsers();
+                return UsersList(_users, _saved);
               } else {
-                return _buildUsersGrid();
+                return UsersGrid(_users, _saved);
               }
             } else if (snapshot.hasError) {
               return Text('${snapshot.error}');
@@ -118,103 +119,6 @@ class _FairUsersState extends State<FairUsers> {
       MaterialPageRoute<void>(
         builder: (BuildContext context) {
           return UserDetails(user);
-        },
-      ),
-    );
-  }
-
-  Widget _buildUsers() {
-    return ListView.builder(
-        padding: const EdgeInsets.all(16.0),
-        itemCount: _users.length,
-        itemBuilder: (context, i) {
-          return _buildRow(_users[i]);
-        });
-  }
-
-  Widget _buildUsersGrid() {
-    return GridView.builder(
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 3,
-        ),
-        padding: const EdgeInsets.all(16.0),
-        itemCount: _users.length,
-        itemBuilder: (context, i) {
-          return _buildGridRow(_users[i]);
-        });
-  }
-
-  Widget _buildRow(User user) {
-    final alreadySaved = _saved.contains(user);
-    return Card(
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(16.0),
-        leading: CircleAvatar(
-          backgroundImage: NetworkImage(user.picture),
-          radius: 30,
-        ),
-        title: Text(
-          '${user.firstName} ${user.lastName}',
-          style: _biggerFont,
-        ),
-        trailing: Icon(
-          alreadySaved ? Icons.favorite : Icons.favorite_border,
-          color: alreadySaved ? Colors.red : null,
-        ),
-        onTap: (){
-          pushDetails(user);
-        },
-        onLongPress: () {
-          setState(() {
-            if (alreadySaved) {
-              _saved.remove(user);
-            } else {
-              _saved.add(user);
-            }
-          });
-        },
-      ),
-    );
-  }
-
-  Widget _buildGridRow(User user) {
-    final alreadySaved = _saved.contains(user);
-    return Card(
-      child : InkWell(
-        child: GridTile(
-            child: Image.network(user.picture, fit: BoxFit.cover),
-            header: Container(
-              alignment: Alignment.topRight,
-              child: Icon(
-                alreadySaved ? Icons.favorite : Icons.favorite_border,
-                color: alreadySaved ? Colors.red : null,
-              ),
-            ),
-            footer: Center(
-              child: FittedBox(
-                fit: BoxFit.fitWidth,
-                child: Text(
-                  '${user.firstName} ${user.lastName}',
-                  style: const TextStyle(
-                    fontSize: 18.0,
-                    backgroundColor: Colors.white54,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            )
-        ),
-        onTap: (){
-          pushDetails(user);
-        },
-        onLongPress: () {
-          setState(() {
-            if (alreadySaved) {
-              _saved.remove(user);
-            } else {
-              _saved.add(user);
-            }
-          });
         },
       ),
     );
