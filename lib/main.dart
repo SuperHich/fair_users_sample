@@ -1,11 +1,11 @@
 import 'dart:async';
 
-import 'package:fair_users/model/location.dart';
 import 'package:fair_users/model/user.dart';
 import 'package:fair_users/model/user_response.dart';
 import 'package:fair_users/service/fair_api.dart';
+import 'package:fair_users/view/favorite_users.dart';
+import 'package:fair_users/view/user_details.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 void main() {
   runApp(MyApp());
@@ -36,10 +36,18 @@ class _FairUsersState extends State<FairUsers> {
   final _saved = <User>{};
   final _biggerFont = const TextStyle(fontSize: 18.0);
 
+  int _selectedIndex = 0;
+
   @override
   void initState() {
     super.initState();
     usersResponse = fetchUsers();
+  }
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
   }
 
   @override
@@ -48,15 +56,41 @@ class _FairUsersState extends State<FairUsers> {
       appBar: AppBar(
         title: const Text('Fair users'),
         actions: [
-          IconButton(icon: Icon(Icons.list), onPressed: _pushSaved),
+          IconButton(
+              icon: Icon(Icons.list),
+              onPressed: (){
+                pushSaved(_saved);
+              }
+          ),
         ],
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.list),
+            label: "List",
+          ),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.grid_3x3),
+              label: "Grid"
+          ),
+        ],
+        currentIndex: _selectedIndex,
+        selectedItemColor: Colors.blue[500],
+        onTap: _onItemTapped,
       ),
       body: Center(
         child: FutureBuilder<UserResponse>(
           future: usersResponse,
           builder: (context, snapshot) {
             if (snapshot.hasData && snapshot.data != null) {
-              return _buildUsers(snapshot.data!.data);
+              _users.clear();
+              _users.addAll(snapshot.data!.data);
+              if(_selectedIndex == 0) {
+                return _buildUsers();
+              } else {
+                return _buildUsersGrid();
+              }
             } else if (snapshot.hasError) {
               return Text('${snapshot.error}');
             }
@@ -69,13 +103,44 @@ class _FairUsersState extends State<FairUsers> {
     );
   }
 
-  Widget _buildUsers(List<User> users) {
-    _users.addAll(users);
+  void pushSaved(Set<User> savedUsers) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (BuildContext context) {
+          return FavoriteUsers(_saved);
+        },
+      ),
+    );
+  }
+
+  void pushDetails(User user) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (BuildContext context) {
+          return UserDetails(user);
+        },
+      ),
+    );
+  }
+
+  Widget _buildUsers() {
     return ListView.builder(
         padding: const EdgeInsets.all(16.0),
-        itemCount: users.length,
+        itemCount: _users.length,
         itemBuilder: (context, i) {
           return _buildRow(_users[i]);
+        });
+  }
+
+  Widget _buildUsersGrid() {
+    return GridView.builder(
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 3,
+        ),
+        padding: const EdgeInsets.all(16.0),
+        itemCount: _users.length,
+        itemBuilder: (context, i) {
+          return _buildGridRow(_users[i]);
         });
   }
 
@@ -97,7 +162,7 @@ class _FairUsersState extends State<FairUsers> {
           color: alreadySaved ? Colors.red : null,
         ),
         onTap: (){
-          _pushDetails(user);
+          pushDetails(user);
         },
         onLongPress: () {
           setState(() {
@@ -112,115 +177,46 @@ class _FairUsersState extends State<FairUsers> {
     );
   }
 
-  void _pushSaved() {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (BuildContext context) {
-          final tiles = _saved.map(
-                (User user) {
-              return ListTile(
-                title: Text(
-                  '${user.firstName} ${user.lastName}',
-                  style: _biggerFont,
-                ),
-              );
-            },
-          );
-          final divided = tiles.isNotEmpty
-              ? ListTile.divideTiles(context: context, tiles: tiles).toList()
-              : <Widget>[];
-
-          return Scaffold(
-            appBar: AppBar(
-              title: Text('Saved Suggestions'),
-            ),
-            body: ListView(children: divided),
-          );
-        },
-      ),
-    );
-  }
-
-  void _pushDetails(User user) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (BuildContext context) {
-          Future<User> userDetails = fetchUserDetails(user.id);
-
-          return Scaffold(
-              appBar: AppBar(
-                title: Text('${user.firstName} details'),
+  Widget _buildGridRow(User user) {
+    final alreadySaved = _saved.contains(user);
+    return Card(
+      child : InkWell(
+        child: GridTile(
+            child: Image.network(user.picture, fit: BoxFit.cover),
+            header: Container(
+              alignment: Alignment.topRight,
+              child: Icon(
+                alreadySaved ? Icons.favorite : Icons.favorite_border,
+                color: alreadySaved ? Colors.red : null,
               ),
-              body: Center(
-                child: FutureBuilder<User>(
-                  future: userDetails,
-                  builder: (context, snapshot) {
-                    if (snapshot.hasData && snapshot.data != null) {
-                      return details(snapshot.data!);
-                    } else if (snapshot.hasError) {
-                      return Text('${snapshot.error}');
-                    }
-
-                    // By default, show a loading spinner.
-                    return const CircularProgressIndicator();
-                  },
+            ),
+            footer: Center(
+              child: FittedBox(
+                fit: BoxFit.fitWidth,
+                child: Text(
+                  '${user.firstName} ${user.lastName}',
+                  style: const TextStyle(
+                    fontSize: 18.0,
+                    backgroundColor: Colors.white54,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-              )
-          );
+              ),
+            )
+        ),
+        onTap: (){
+          pushDetails(user);
+        },
+        onLongPress: () {
+          setState(() {
+            if (alreadySaved) {
+              _saved.remove(user);
+            } else {
+              _saved.add(user);
+            }
+          });
         },
       ),
     );
-  }
-
-  Column details(User user) {
-    return Column(
-      children: [
-        detailHeader(user),
-        detailItem('${user.title} ${user.firstName} ${user.lastName}', Icons.person),
-        const Divider(),
-        detailItem('${new DateFormat('dd MMM yyyy').format(user.dateOfBirth!)}', Icons.card_giftcard),
-        const Divider(),
-        detailItem('${user.email}', Icons.mail),
-        const Divider(),
-        detailItem('${user.phone}', Icons.phone),
-        const Divider(),
-        detailItem('${buildAddress(user.location)}', Icons.map),
-      ],
-    );
-  }
-
-  Widget detailHeader(User user) {
-    return
-      Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: CircleAvatar(
-          backgroundImage: NetworkImage(user.picture),
-          radius: 60,
-        ),
-      );
-  }
-
-  Widget detailItem(String text, IconData icon) {
-    return
-      Padding(
-        padding: const EdgeInsets.all(5.0),
-        child: ListTile(
-          title: Text(
-            text,
-            style: _biggerFont,
-          ),
-          leading: Icon(
-            icon,
-            color: Colors.blue[500],
-          ),
-        ),
-      );
-  }
-
-  String buildAddress(Location? location) {
-    if(location != null) {
-      return '${location.street} ${location.city} ${location.state} ${location.country}';
-    }
-    return "Not available";
   }
 }
