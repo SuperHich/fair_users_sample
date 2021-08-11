@@ -3,11 +3,13 @@ import 'dart:async';
 import 'package:fair_users/model/user.dart';
 import 'package:fair_users/model/user_response.dart';
 import 'package:fair_users/service/fair_api.dart';
+import 'package:fair_users/utils/shared_data.dart';
 import 'package:fair_users/view/favorite_users.dart';
 import 'package:fair_users/view/user_details.dart';
 import 'package:fair_users/view/users_grid.dart';
 import 'package:fair_users/view/users_list.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   runApp(MyApp());
@@ -43,6 +45,17 @@ class _FairUsersState extends State<FairUsers> {
   void initState() {
     super.initState();
     usersResponse = fetchUsers();
+  }
+
+  void loadFavoriteUsers() async {
+    final prefs = await SharedPreferences.getInstance();
+    List<String> savedUserIds = prefs.getStringList(KEY_FAVORITE_USERS) ?? List.empty();
+    if(savedUserIds.isNotEmpty) {
+      List<User> usersList = _users.where((e) => savedUserIds.contains(e.id)).toList();
+      setState(() {
+          _saved.addAll(usersList);
+      });
+    }
   }
 
   void _onItemTapped(int index) {
@@ -87,6 +100,9 @@ class _FairUsersState extends State<FairUsers> {
             if (snapshot.hasData && snapshot.data != null) {
               _users.clear();
               _users.addAll(snapshot.data!.data);
+
+              loadFavoriteUsers();
+
               if(_selectedIndex == 0) {
                 return UsersList(_users, _saved);
               } else {

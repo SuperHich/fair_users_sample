@@ -1,4 +1,5 @@
 import 'package:fair_users/model/user.dart';
+import 'package:fair_users/utils/shared_data.dart';
 import 'package:fair_users/view/user_details.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -23,7 +24,7 @@ class _UsersListState extends State<UsersList> {
   }
 
   Widget _buildRow(User user) {
-    final alreadySaved = widget.saved.contains(user);
+    final alreadySaved = widget.saved.any((item) => item.id == user.id);
     return Card(
       child: ListTile(
         contentPadding: const EdgeInsets.all(16.0),
@@ -49,6 +50,7 @@ class _UsersListState extends State<UsersList> {
             } else {
               widget.saved.add(user);
             }
+            saveFavoriteUsers(widget.saved.toList());
           });
         },
       ),
