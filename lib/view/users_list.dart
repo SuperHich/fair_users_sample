@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:fair_users/model/user.dart';
 import 'package:fair_users/utils/shared_data.dart';
 import 'package:fair_users/view/user_details.dart';

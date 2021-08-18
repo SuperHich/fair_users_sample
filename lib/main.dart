@@ -35,7 +35,7 @@ class FairUsers extends StatefulWidget {
 }
 
 class _FairUsersState extends State<FairUsers> {
-  late Future<UserResponse> usersResponse;
+  late Future<List<User>> usersResponse;
   final _users = <User>[];
   final _saved = <User>{};
 
@@ -94,12 +94,12 @@ class _FairUsersState extends State<FairUsers> {
         onTap: _onItemTapped,
       ),
       body: Center(
-        child: FutureBuilder<UserResponse>(
+        child: FutureBuilder<List<User>>(
           future: usersResponse,
           builder: (context, snapshot) {
             if (snapshot.hasData && snapshot.data != null) {
               _users.clear();
-              _users.addAll(snapshot.data!.data);
+              _users.addAll(snapshot.data!);
 
               loadFavoriteUsers();
 
