@@ -3,10 +3,13 @@ import 'dart:convert';
 import 'package:fair_users/model/user.dart';
 import 'package:http/http.dart' as http;
 
+const String BASE_URL = "http://localhost:8080/";
+const String HEADER_ACCEPT = "application/json; charset=UTF-8";
+
 Future<List<User>> fetchUsers() async {
   final response = await http.get(
-      Uri.parse('http://localhost:8080/users'),
-      headers: {"Accept": "application/json; charset=UTF-8"}
+      Uri.parse('${BASE_URL}users'),
+      headers: {"Accept": HEADER_ACCEPT}
   );
 
   if (response.statusCode == 200) {
@@ -24,8 +27,8 @@ Future<List<User>> fetchUsers() async {
 
 Future<User> fetchUserDetails(String userId) async {
   final response = await http.get(
-      Uri.parse('http://localhost:8080/user/$userId'),
-      headers: {"Accept": "application/json; charset=UTF-8"}
+      Uri.parse('${BASE_URL}user/$userId'),
+      headers: {"Accept": HEADER_ACCEPT}
   );
 
   if (response.statusCode == 200) {
