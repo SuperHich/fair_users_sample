@@ -9,7 +9,10 @@ const String HEADER_ACCEPT = "application/json; charset=UTF-8";
 Future<List<User>> fetchUsers() async {
   final response = await http.get(
       Uri.parse('${BASE_URL}users'),
-      headers: {"Accept": HEADER_ACCEPT}
+      headers: {
+        "Accept": HEADER_ACCEPT,
+        "Access-Control-Allow-Origin": "*"
+      }
   );
 
   if (response.statusCode == 200) {

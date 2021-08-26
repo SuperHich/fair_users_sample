@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:fair_users/model/user.dart';
-import 'package:fair_users/model/user_response.dart';
 import 'package:fair_users/service/fair_api.dart';
 import 'package:fair_users/utils/shared_data.dart';
 import 'package:fair_users/view/favorite_users.dart';
@@ -44,7 +43,13 @@ class _FairUsersState extends State<FairUsers> {
   @override
   void initState() {
     super.initState();
-    usersResponse = fetchUsers();
+    _refreshUsers();
+  }
+
+  void _refreshUsers() {
+    setState(() {
+      usersResponse = fetchUsers();
+    });
   }
 
   void loadFavoriteUsers() async {
@@ -104,9 +109,9 @@ class _FairUsersState extends State<FairUsers> {
               loadFavoriteUsers();
 
               if(_selectedIndex == 0) {
-                return UsersList(_users, _saved);
+                return UsersList(_users, _saved, _refreshUsers);
               } else {
-                return UsersGrid(_users, _saved);
+                return UsersGrid(_users, _saved, _refreshUsers);
               }
             } else if (snapshot.hasError) {
               return Text('${snapshot.error}');
